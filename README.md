@@ -1,81 +1,80 @@
-# 🐍 Snake RL - 强化学习贪吃蛇
+# Smart Snake AI
 
-基于深度Q网络(DQN)的强化学习贪吃蛇游戏，支持Windows/Linux/Mac多平台，支持CPU和CUDA GPU训练。
+Advanced Deep Q-Network reinforcement learning for Snake game with cross-platform support and CUDA GPU acceleration.
 
-![Snake RL Demo](https://img.shields.io/badge/Python-3.8%2B-blue.svg)
-![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red.svg)
-![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20Mac-lightgrey.svg)
-![CUDA](https://img.shields.io/badge/CUDA-11.8%2B-green.svg)
+![Python 3.8+](https://img.shields.io/badge/Python-3.8+-blue.svg)
+![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0+-red.svg)
+![Cross Platform](https://img.shields.io/badge/Platform-Windows%20Linux%20Mac-lightgrey.svg)
+![CUDA](https://img.shields.io/badge/CUDA-11.8+-green.svg)
 
-## 🎯 项目特点
+## Key Features
 
-- **🧠 先进的DQN算法**：改进的深度Q网络，包含优先经验回放
-- **⚡ CUDA加速**：支持GPU训练，显著提升训练速度
-- **🌍 多平台支持**：Windows 11、Linux、macOS全平台兼容
-- **📊 丰富的状态表示**：408维状态空间，包含位置、方向、距离信息
-- **🎮 可视化演示**：Pygame图形界面和控制台模式
-- **📈 性能分析**：详细的训练和评估指标
+- Advanced DQN Algorithm: Enhanced Deep Q-Network with prioritized experience replay
+- CUDA Acceleration: GPU training support for significantly faster training
+- Cross-Platform Support: Compatible with Windows, Linux, and macOS
+- Rich State Representation: 408-dimensional state space with position, direction, and distance information
+- Interactive Demos: Pygame graphical interface and console modes
+- Performance Analysis: Detailed training and evaluation metrics
 
-## 🚀 快速开始
+## Quick Start
 
-### Windows 用户
+### Windows Users
 
-1. **克隆项目**
+1. **Clone Repository**
    ```bash
-   git clone <repository-url>
-   cd snake-rl
+   git clone https://github.com/ltsyk/smart-snake-ai.git
+   cd smart-snake-ai
    ```
 
-2. **环境设置**
+2. **Environment Setup**
    
-   **CPU版本（推荐新手）：**
+   **CPU Version (recommended for beginners):**
    ```batch
    setup_windows.bat
    ```
    
-   **GPU版本（需要NVIDIA显卡）：**
+   **GPU Version (requires NVIDIA GPU):**
    ```batch
    setup_cuda.bat
    ```
 
-3. **开始训练**
+3. **Start Training**
    ```batch
    train_windows.bat
    ```
 
-4. **运行演示**
+4. **Run Demo**
    ```batch
    demo_windows.bat
    ```
 
-### Linux/Mac 用户
+### Linux/Mac Users
 
-1. **环境设置**
+1. **Environment Setup**
    ```bash
-   # 基本设置
    chmod +x setup.sh
    ./setup.sh
    source venv/bin/activate
    
-   # GPU支持（可选）
+   # GPU support (optional)
    pip install -r requirements-cuda.txt
    ```
 
-2. **开始训练**
+2. **Start Training**
    ```bash
-   # CPU训练
+   # CPU training
    python train/train_improved.py --episodes 1000
    
-   # GPU训练
+   # GPU training
    python train/train_improved.py --episodes 5000 --use_cuda --use_prioritized_replay
    ```
 
-3. **运行演示**
+3. **Run Demo**
    ```bash
-   # 图形界面演示
+   # Graphical demo
    python demo_improved.py --model_path models/improved_dqn_snake.pt
    
-   # 控制台演示
+   # Console demo
    python evaluate_improved.py --episodes 50
    ```
 
