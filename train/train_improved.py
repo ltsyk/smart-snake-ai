@@ -3,6 +3,7 @@ import os
 import random
 import numpy as np
 import sys
+import math
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import torch
 import torch.nn as nn
@@ -11,23 +12,33 @@ from collections import deque
 from src.env_improved import ImprovedSnakeEnv
 
 class ImprovedDQN(nn.Module):
-    """改进的DQN网络结构"""
+    """引入Dueling结构的改进DQN网络"""
     def __init__(self, input_dim, output_dim, hidden_size=256):
         super(ImprovedDQN, self).__init__()
-        self.net = nn.Sequential(
+        self.feature = nn.Sequential(
             nn.Linear(input_dim, hidden_size),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.2)
+        )
+        self.value_stream = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size // 2),
+            nn.ReLU(),
+            nn.Linear(hidden_size // 2, 1)
+        )
+        self.adv_stream = nn.Sequential(
             nn.Linear(hidden_size, hidden_size // 2),
             nn.ReLU(),
             nn.Linear(hidden_size // 2, output_dim)
         )
 
     def forward(self, x):
-        return self.net(x)
+        features = self.feature(x)
+        value = self.value_stream(features)
+        advantage = self.adv_stream(features)
+        return value + advantage - advantage.mean(dim=1, keepdim=True)
 
 class PrioritizedReplayBuffer:
     """优先经验回放缓冲区"""
@@ -138,13 +149,16 @@ def train_improved(args):
         replay = SimpleReplayBuffer(capacity=args.replay_size)
 
     epsilon = args.epsilon_start
-    epsilon_decay = (args.epsilon_start - args.epsilon_end) / args.epsilon_decay
+    linear_decay = (args.epsilon_start - args.epsilon_end) / args.epsilon_decay
     
     best_score = -float('inf')
     recent_scores = deque(maxlen=100)
 
     print(f"开始训练改进模型...")
-    print(f"网络结构: {obs_dim} -> {args.hidden_size} -> {args.hidden_size} -> {args.hidden_size//2} -> {n_actions}")
+    print(
+        f"使用Dueling DQN结构，特征层: {obs_dim} -> {args.hidden_size} -> {args.hidden_size}, "
+        f"分支: {args.hidden_size//2} -> {n_actions}"
+    )
     
     for episode in range(1, args.episodes + 1):
         state = env.reset()
@@ -184,7 +198,8 @@ def train_improved(args):
                     
                     q_values = policy_net(batch_state).gather(1, batch_action.unsqueeze(1)).squeeze()
                     with torch.no_grad():
-                        next_q = target_net(batch_next).max(1)[0]
+                        next_actions = policy_net(batch_next).argmax(1)
+                        next_q = target_net(batch_next).gather(1, next_actions.unsqueeze(1)).squeeze()
                         target = batch_reward + args.gamma * next_q * (1 - batch_done)
 
                     # 计算TD误差
@@ -208,7 +223,8 @@ def train_improved(args):
                     
                     q_values = policy_net(batch_state).gather(1, batch_action.unsqueeze(1)).squeeze()
                     with torch.no_grad():
-                        next_q = target_net(batch_next).max(1)[0]
+                        next_actions = policy_net(batch_next).argmax(1)
+                        next_q = target_net(batch_next).gather(1, next_actions.unsqueeze(1)).squeeze()
                         target = batch_reward + args.gamma * next_q * (1 - batch_done)
                     loss = nn.MSELoss()(q_values, target)
 
@@ -223,7 +239,10 @@ def train_improved(args):
             target_net.load_state_dict(policy_net.state_dict())
 
         # 更新epsilon和学习率
-        epsilon = max(args.epsilon_end, epsilon - epsilon_decay)
+        if args.epsilon_strategy == 'linear':
+            epsilon = max(args.epsilon_end, epsilon - linear_decay)
+        else:
+            epsilon = args.epsilon_end + (args.epsilon_start - args.epsilon_end) * math.exp(-episode / args.epsilon_decay)
         scheduler.step()
 
         # 记录分数
@@ -275,7 +294,8 @@ if __name__ == '__main__':
     # 探索参数
     parser.add_argument('--epsilon_start', type=float, default=1.0, help='初始epsilon')
     parser.add_argument('--epsilon_end', type=float, default=0.05, help='最终epsilon')
-    parser.add_argument('--epsilon_decay', type=int, default=2000, help='epsilon衰减步数')
+    parser.add_argument('--epsilon_decay', type=int, default=2000, help='epsilon衰减速率')
+    parser.add_argument('--epsilon_strategy', choices=['linear', 'exp'], default='linear', help='epsilon衰减策略')
     
     # 回放缓冲区
     parser.add_argument('--replay_size', type=int, default=50000, help='回放缓冲区大小')

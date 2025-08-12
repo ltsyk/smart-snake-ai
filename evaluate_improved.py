@@ -13,22 +13,33 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
 from src.env_improved import ImprovedSnakeEnv
 
 class ImprovedDQN(nn.Module):
+    """与训练一致的Dueling DQN结构"""
     def __init__(self, input_dim, output_dim, hidden_size=256):
         super(ImprovedDQN, self).__init__()
-        self.net = nn.Sequential(
+        self.feature = nn.Sequential(
             nn.Linear(input_dim, hidden_size),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.2)
+        )
+        self.value_stream = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size // 2),
+            nn.ReLU(),
+            nn.Linear(hidden_size // 2, 1)
+        )
+        self.adv_stream = nn.Sequential(
             nn.Linear(hidden_size, hidden_size // 2),
             nn.ReLU(),
             nn.Linear(hidden_size // 2, output_dim)
         )
 
     def forward(self, x):
-        return self.net(x)
+        features = self.feature(x)
+        value = self.value_stream(features)
+        adv = self.adv_stream(features)
+        return value + adv - adv.mean(dim=1, keepdim=True)
 
 def evaluate_improved_model(model_path, num_episodes=100, max_steps=1000, verbose=False):
     """评估改进模型性能"""
