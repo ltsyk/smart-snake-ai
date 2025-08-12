@@ -29,13 +29,17 @@ class ImprovedSnakeEnv(gym.Env):
     def step(self, action):
         old_score = self.game.score
         old_distance = self._calculate_food_distance()
-        old_length = len(self.game.snake)
-        
+        head_x, head_y = self.game.snake[0]
+        dir_x, dir_y = DIR_VECTORS[action]
+        predicted_head = ((head_x + dir_x) % GRID_SIZE,
+                          (head_y + dir_y) % GRID_SIZE)
+        will_self_collide = predicted_head in self.game.snake
+
         # 执行动作
         self.game.step(action)
-        
+
         # 计算奖励
-        reward = self._calculate_reward(old_score, old_distance, old_length, action)
+        reward = self._calculate_reward(old_score, old_distance, will_self_collide)
         
         # 更新状态
         self.last_score = self.game.score
@@ -65,7 +69,7 @@ class ImprovedSnakeEnv(gym.Env):
         
         return dx + dy
 
-    def _calculate_reward(self, old_score, old_distance, old_length, action):
+    def _calculate_reward(self, old_score, old_distance, self_collision):
         """计算更精细的奖励函数"""
         reward = 0
         
@@ -88,12 +92,9 @@ class ImprovedSnakeEnv(gym.Env):
         if self.game.done:
             reward -= 10.0
         
-        # 5. 避免无意义的移动（防止在原地打转）
-        if len(self.game.snake) > 1:
-            head = self.game.snake[0]
-            neck = self.game.snake[1]
-            if head == neck:  # 撞到自己
-                reward -= 5.0
+        # 5. 自撞惩罚
+        if self_collision:
+            reward -= 5.0
         
         return reward
 

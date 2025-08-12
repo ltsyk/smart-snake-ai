@@ -30,10 +30,10 @@ class ImprovedDQN(nn.Module):
     def forward(self, x):
         return self.net(x)
 
-def evaluate_improved_model(model_path, num_episodes=100, max_steps=1000, verbose=False):
+def evaluate_improved_model(model_path, num_episodes=100, max_steps=1000, verbose=False, hidden_size=256):
     """评估改进模型性能"""
     # 加载模型
-    model = ImprovedDQN(408, 4, hidden_size=128)  # 使用训练时的参数
+    model = ImprovedDQN(408, 4, hidden_size=hidden_size)
     state_dict = torch.load(model_path, map_location='cpu')
     model.load_state_dict(state_dict)
     model.eval()
@@ -168,11 +168,13 @@ def main():
                         help='显示详细输出')
     parser.add_argument('--compare', action='store_true',
                         help='与原始模型对比')
+    parser.add_argument('--hidden_size', type=int, default=256,
+                        help='网络隐藏层大小，应与训练时一致')
     args = parser.parse_args()
     
     # 评估改进模型
     imp_scores, imp_lengths, imp_rewards = evaluate_improved_model(
-        args.improved_model, args.episodes, args.max_steps, args.verbose
+        args.improved_model, args.episodes, args.max_steps, args.verbose, args.hidden_size
     )
     
     metrics = analyze_improved_performance(imp_scores, imp_lengths, imp_rewards)
